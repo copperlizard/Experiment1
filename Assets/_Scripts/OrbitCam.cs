@@ -67,7 +67,7 @@ public class OrbitCam : MonoBehaviour
     Vector3 IntersectCheck(Vector3 target)
     {
         //If intersection (cast ray from player to camera)
-        if (Physics.Raycast(m_target.transform.position, target - m_target.transform.position, out m_interAt))
+        if (Physics.Raycast(m_target.transform.position, target - m_target.transform.position, out m_interAt, m_dist))
         {                     
             float tDist = 0.0f;
             
@@ -86,14 +86,14 @@ public class OrbitCam : MonoBehaviour
 
                 //If not on ignored layer
                 if(!ignore)
-                {
-                    tDist = Mathf.Min(Mathf.Clamp(m_interAt.distance - m_fudge, m_minDist, m_maxDist), m_dist);                   
+                {                     
+                    tDist = Mathf.Clamp(m_interAt.distance - m_fudge, m_minDist, m_maxDist);
                     target = (m_rot * new Vector3(0.0f, 0.0f, -tDist)) + m_target.transform.position;
                 }
             }
             else
-            {
-                tDist = Mathf.Min(Mathf.Clamp(m_interAt.distance - m_fudge, m_minDist, m_maxDist), m_dist);               
+            {                 
+                tDist = Mathf.Clamp(m_interAt.distance - m_fudge, m_minDist, m_maxDist);
                 target = (m_rot * new Vector3(0.0f, 0.0f, -tDist)) + m_target.transform.position;
             }            
         }
