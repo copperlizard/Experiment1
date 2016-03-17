@@ -81,8 +81,8 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 			if (m_IsGrounded && crouch)
 			{
 				if (m_Crouching) return;
-				m_Capsule.height = m_Capsule.height / 2f;
-				m_Capsule.center = m_Capsule.center / 2f;
+				m_Capsule.height = m_CapsuleHeight / 2f;
+				//m_Capsule.center = m_Capsule.center / 2f; //not neccessary after groundcheckstatus modification
 				m_Crouching = true;
 			}
 			else
@@ -95,8 +95,8 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 					return;
 				}
 				m_Capsule.height = m_CapsuleHeight;
-				m_Capsule.center = m_CapsuleCenter;
-				m_Crouching = false;
+                //m_Capsule.center = m_CapsuleCenter; //not neccessary after groundcheckstatus modification
+                m_Crouching = false;
 			}
 		}
 
@@ -199,6 +199,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 		}
 
 
+        /* modified original to account for changes to player collider
 		void CheckGroundStatus()
 		{
 			RaycastHit hitInfo;
@@ -221,5 +222,27 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 				m_Animator.applyRootMotion = false;
 			}
 		}
-	}
+        */
+
+        void CheckGroundStatus()
+        {   
+            RaycastHit hitInfo;
+#if UNITY_EDITOR
+            // helper to visualise the ground check ray in the scene view
+            Debug.DrawLine(transform.position + m_Capsule.center, (transform.position + m_Capsule.center) + Vector3.down * ((m_Capsule.height / 2.0f) + m_GroundCheckDistance), Color.yellow);
+#endif
+            if (Physics.Raycast(transform.position + m_Capsule.center, Vector3.down, out hitInfo, (m_Capsule.height / 2.0f) + m_GroundCheckDistance))
+            {
+                m_GroundNormal = hitInfo.normal;
+                m_IsGrounded = true;
+                m_Animator.applyRootMotion = true;
+            }
+            else
+            {
+                m_IsGrounded = false;
+                m_GroundNormal = Vector3.up;
+                m_Animator.applyRootMotion = false;
+            }
+        }
+    }
 }
