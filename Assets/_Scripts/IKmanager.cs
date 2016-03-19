@@ -12,6 +12,8 @@ public class IKmanager : MonoBehaviour
 
     private CapsuleCollider m_playerCol;
 
+    private Rigidbody m_playerRB;
+
     private Transform m_playerTran, m_leftFootBone, m_rightFootBone;
     private Vector3 m_leftFootTarPos, m_rightFootTarPos, m_ColStartCenter;
     private Quaternion m_leftFootTarRot, m_rightFootTarRot;    
@@ -25,11 +27,13 @@ public class IKmanager : MonoBehaviour
     // Use this for initialization
     void Start ()
     {
-        m_anim = GetComponent<Animator>();       
+        m_anim = GetComponent<Animator>();               
 
         m_playerCol = GetComponent<CapsuleCollider>();
         m_ColStartHeight = m_playerCol.height;
         m_ColStartCenter = m_playerCol.center;
+
+        m_playerRB = GetComponent<Rigidbody>();
 
         m_playerTran = GetComponentsInChildren<Transform>()[1]; //skipping first returned transform
     }
@@ -39,6 +43,7 @@ public class IKmanager : MonoBehaviour
     {
         m_baseLayerState = m_anim.GetCurrentAnimatorStateInfo(0);
 
+        /*
         if (m_baseLayerState.IsName("Base Layer.Airborne"))
         {
             Debug.Log("Base Layer.Airborne");
@@ -51,14 +56,15 @@ public class IKmanager : MonoBehaviour
         {
             Debug.Log("Base Layer.Crouching");
         }
+        */
     }
 
     static float sink = 0.0f;
     void CheckFeet()
     {
         //Find lifted feet pos
-        Vector3 leftFootLiftedPos = m_leftFootTarPos + new Vector3(0.0f, m_maxFootLift, 0.0f);
-        Vector3 rightFootLiftedPos = m_rightFootTarPos + new Vector3(0.0f, m_maxFootLift, 0.0f);
+        Vector3 leftFootLiftedPos = m_leftFootTarPos + new Vector3(0.0f, m_maxFootLift + m_surfOffset, 0.0f);
+        Vector3 rightFootLiftedPos = m_rightFootTarPos + new Vector3(0.0f, m_maxFootLift + m_surfOffset, 0.0f);
 
         //Check feet
         m_leftFootInter = Physics.Raycast(leftFootLiftedPos, Vector3.down, out m_interAtLeftFoot, m_maxFootFall + m_maxFootLift);
@@ -68,6 +74,7 @@ public class IKmanager : MonoBehaviour
         if (m_leftFootInter)
         {
             m_leftFootTarPos = m_interAtLeftFoot.point + (m_interAtLeftFoot.normal * m_surfOffset);
+            //m_leftFootTarPos = Vector3.Lerp(m_leftFootTarPos, m_interAtLeftFoot.point + (m_interAtLeftFoot.normal * m_surfOffset), m_footDamp);
             m_leftFootTarRot = Quaternion.FromToRotation(Vector3.up, m_interAtLeftFoot.normal) * transform.rotation;                      
         }        
         
@@ -75,6 +82,7 @@ public class IKmanager : MonoBehaviour
         if (m_rightFootInter)
         {
             m_rightFootTarPos = m_interAtRightFoot.point + (m_interAtRightFoot.normal * m_surfOffset);
+            //m_rightFootTarPos = Vector3.Lerp(m_rightFootTarPos, m_interAtRightFoot.point + (m_interAtRightFoot.normal * m_surfOffset), m_footDamp);
             m_rightFootTarRot = Quaternion.FromToRotation(Vector3.up, m_interAtRightFoot.normal) * transform.rotation;
         }      
 
@@ -90,8 +98,16 @@ public class IKmanager : MonoBehaviour
         }
         sink = Mathf.Clamp(Mathf.Lerp(sink, feetHeightDif, m_sinkDamp), 0.0f, m_maxFootFall + m_maxFootLift);
         
-        m_playerCol.height = m_ColStartHeight - sink;        
-        m_playerCol.center = m_ColStartCenter + new Vector3(0.0f, sink, 0.0f);        
+        if(!m_baseLayerState.IsName("Base Layer.Crouching"))
+        {                    
+            m_playerCol.height = m_ColStartHeight - sink;
+            m_playerCol.center = m_ColStartCenter + new Vector3(0.0f, sink, 0.0f);
+        }
+        else
+        {            
+            m_playerCol.height = (m_ColStartHeight * 0.5f) - sink;
+            m_playerCol.center = m_ColStartCenter + new Vector3(0.0f, sink - (m_ColStartCenter.y * 0.5f), 0.0f);
+        }                
     }
 
     void OnAnimatorIK(int layerIndex)
@@ -102,17 +118,10 @@ public class IKmanager : MonoBehaviour
         m_leftFootTarRot = transform.rotation;
         m_rightFootTarRot = transform.rotation;
 
-        if (!m_baseLayerState.IsName("Base Layer.Airborne"))
+        if (!m_baseLayerState.IsName("Base Layer.Airborne") && m_playerRB.velocity.magnitude < 0.5f)
         {
             CheckFeet();
-        }
-
-        /*
-        Debug.Log("\nOnAnimatorIK()");
-        Debug.Log("m_leftFootBone.position == " + m_leftFootBone.position.ToString() + " ; m_leftFootBone.rotation == " + m_leftFootBone.rotation.ToString() + " ; m_leftFootOffset == " + m_leftFootOffset.ToString());
-        Debug.Log("m_rightFootBone.position == " + m_rightFootBone.position.ToString() + " ; m_rightFootBone.rotation == " + m_rightFootBone.rotation.ToString() + " ; m_rightFootOffset == " + m_rightFootOffset.ToString());
-        Debug.Log("m_leftFootTarPos == " + m_leftFootTarPos.ToString() + " ; m_rightFootTarPos == " + m_rightFootTarPos.ToString());
-        */
+        }        
 
         //Debug.Log("m_leftFootTarPos == " + m_leftFootTarPos.ToString() + " ; m_rightFootTarPos == " + m_rightFootTarPos.ToString());
 

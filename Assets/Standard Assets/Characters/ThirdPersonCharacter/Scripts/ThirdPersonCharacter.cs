@@ -75,7 +75,43 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 			UpdateAnimator(move);
 		}
 
+        void ScaleCapsuleForCrouching(bool crouch)
+        {
+            if (m_IsGrounded && crouch)
+            {
+                if (m_Crouching) return;                
+                m_Crouching = true;
+            }
+            else
+            {
+                Ray crouchRay = new Ray(m_Capsule.center, Vector3.up);
+                float crouchRayLength = m_CapsuleHeight * k_Half;
+                if (Physics.SphereCast(crouchRay, m_Capsule.radius * k_Half, crouchRayLength, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    m_Crouching = true;
+                    return;
+                }                
+                m_Crouching = false;
+            }
+        }
 
+        void PreventStandingInLowHeadroom()
+        {
+            // prevent standing up in crouch-only zones
+            if (!m_Crouching)
+            {
+                Ray crouchRay = new Ray(m_Capsule.center, Vector3.up);
+                float crouchRayLength = m_CapsuleHeight * k_Half;
+                if (Physics.SphereCast(crouchRay, m_Capsule.radius * k_Half, crouchRayLength, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    Debug.Log("PreventStandingInLowHeadroom!");
+
+                    m_Crouching = true;
+                }
+            }
+        }
+
+        /*
 		void ScaleCapsuleForCrouching(bool crouch)
 		{
 			if (m_IsGrounded && crouch)
@@ -113,9 +149,9 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 				}
 			}
 		}
+        */
 
-
-		void UpdateAnimator(Vector3 move)
+        void UpdateAnimator(Vector3 move)
 		{
 			// update the animator parameters
 			m_Animator.SetFloat("Forward", m_ForwardAmount, 0.1f, Time.deltaTime);
@@ -157,7 +193,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 		{
 			// apply extra gravity from multiplier:
 			Vector3 extraGravityForce = (Physics.gravity * m_GravityMultiplier) - Physics.gravity;
-			m_Rigidbody.AddForce(extraGravityForce);
+			m_Rigidbody.AddForce(extraGravityForce);           
 
 			m_GroundCheckDistance = m_Rigidbody.velocity.y < 0 ? m_OrigGroundCheckDistance : 0.01f;
 		}
@@ -195,8 +231,8 @@ namespace UnityStandardAssets.Characters.ThirdPerson
                 // we preserve the existing y part of the current velocity.
                 v.y = m_Rigidbody.velocity.y;
 				m_Rigidbody.velocity = v;
-			}
-		}
+			}            
+        }
 
 
         /* modified original to account for changes to player collider
