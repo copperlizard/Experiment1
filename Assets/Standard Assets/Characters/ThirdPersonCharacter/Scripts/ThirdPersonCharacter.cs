@@ -190,10 +190,10 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 			// this allows us to modify the positional speed before it's applied.
 			if (m_IsGrounded && Time.deltaTime > 0)
 			{
-				Vector3 v = (m_Animator.deltaPosition * m_MoveSpeedMultiplier) / Time.deltaTime;
+                Vector3 v = (m_Animator.deltaPosition * m_MoveSpeedMultiplier) / Time.deltaTime;                              
 
-				// we preserve the existing y part of the current velocity.
-				v.y = m_Rigidbody.velocity.y;
+                // we preserve the existing y part of the current velocity.
+                v.y = m_Rigidbody.velocity.y;
 				m_Rigidbody.velocity = v;
 			}
 		}
@@ -227,21 +227,27 @@ namespace UnityStandardAssets.Characters.ThirdPerson
         void CheckGroundStatus()
         {   
             RaycastHit hitInfo;
-#if UNITY_EDITOR
-            // helper to visualise the ground check ray in the scene view
-            Debug.DrawLine(transform.position + m_Capsule.center, (transform.position + m_Capsule.center) + Vector3.down * ((m_Capsule.height / 2.0f) + m_GroundCheckDistance), Color.yellow);
-#endif
             if (Physics.Raycast(transform.position + m_Capsule.center, Vector3.down, out hitInfo, (m_Capsule.height / 2.0f) + m_GroundCheckDistance))
             {
                 m_GroundNormal = hitInfo.normal;
                 m_IsGrounded = true;
                 m_Animator.applyRootMotion = true;
+
+#if UNITY_EDITOR
+                // helper to visualise the ground check ray in the scene view
+                Debug.DrawLine(transform.position + m_Capsule.center, hitInfo.point, Color.black, 0.1f, true);
+#endif
             }
             else
             {
                 m_IsGrounded = false;
                 m_GroundNormal = Vector3.up;
                 m_Animator.applyRootMotion = false;
+
+#if UNITY_EDITOR
+                // helper to visualise the ground check ray in the scene view
+                Debug.DrawLine(transform.position + m_Capsule.center, (transform.position + m_Capsule.center) + Vector3.down * ((m_Capsule.height / 2.0f) + m_GroundCheckDistance), Color.white, 0.1f, true);
+#endif
             }
         }
     }

@@ -13,7 +13,7 @@ public class IKmanager : MonoBehaviour
     private CapsuleCollider m_playerCol;
 
     private Transform m_playerTran, m_leftFootBone, m_rightFootBone;
-    private Vector3 m_leftFootTarPos, m_rightFootTarPos;
+    private Vector3 m_leftFootTarPos, m_rightFootTarPos, m_ColStartCenter;
     private Quaternion m_leftFootTarRot, m_rightFootTarRot;    
 
     private RaycastHit m_interAtLeftFoot, m_interAtRightFoot;
@@ -29,147 +29,79 @@ public class IKmanager : MonoBehaviour
 
         m_playerCol = GetComponent<CapsuleCollider>();
         m_ColStartHeight = m_playerCol.height;
+        m_ColStartCenter = m_playerCol.center;
 
-        m_playerTran = GetComponentsInChildren<Transform>()[1]; //skipping first returned transform       
-
-        //Foot Bones appear to move outside of this script...
-        //using to establish feet reference positions (from model's T-pose)
-        //m_leftFootBone = m_anim.GetBoneTransform(HumanBodyBones.LeftFoot);
-        //m_rightFootBone = m_anim.GetBoneTransform(HumanBodyBones.RightFoot);        
-
-        //m_leftFootOffset = m_leftFootBone.position - m_playerTran.position;
-        //m_rightFootOffset = m_rightFootBone.position - m_playerTran.position;
-
-        /*
-        //for debug, delete later
-        m_leftFootTarPos = m_playerTran.position + (m_playerTran.rotation * m_leftFootOffset);
-        m_leftFootTarRot = m_leftFootBone.rotation;
-        m_rightFootTarPos = m_playerTran.position + (m_playerTran.rotation * m_rightFootOffset);        
-        m_rightFootTarRot = m_rightFootBone.rotation;
-
-        Debug.Log("\nStart()");
-        Debug.Log("m_leftFootBone.position == " + m_leftFootBone.position.ToString() + " ; m_leftFootBone.rotation == " + m_leftFootBone.rotation.ToString() + " ; m_leftFootOffset == " + m_leftFootOffset.ToString());
-        Debug.Log("m_rightFootBone.position == " + m_rightFootBone.position.ToString() + " ; m_rightFootBone.rotation == " + m_rightFootBone.rotation.ToString() + " ; m_rightFootOffset == " + m_rightFootOffset.ToString());
-        Debug.Log("m_leftFootTarPos == " + m_leftFootTarPos.ToString() + " ; m_rightFootTarPos == " + m_rightFootTarPos.ToString());
-        */
+        m_playerTran = GetComponentsInChildren<Transform>()[1]; //skipping first returned transform
     }
 	
 	// Update is called once per frame
 	void Update ()
     {
-        m_baseLayerState = m_anim.GetCurrentAnimatorStateInfo(0);        
+        m_baseLayerState = m_anim.GetCurrentAnimatorStateInfo(0);
 
-        /*
-        if (m_baseLayerState.IsName("Base Layer.Grounded"))
+        if (m_baseLayerState.IsName("Base Layer.Airborne"))
         {
-            Debug.Log("Grounded!");
+            Debug.Log("Base Layer.Airborne");
         }
-        else if (m_baseLayerState.IsName("Base Layer.Airborne"))
+        else if (m_baseLayerState.IsName("Base Layer.Grounded"))
         {
-            Debug.Log("Airborne!");
+            Debug.Log("Base Layer.Grounded");
         }
         else if (m_baseLayerState.IsName("Base Layer.Crouching"))
         {
-            Debug.Log("Crouching!");
+            Debug.Log("Base Layer.Crouching");
         }
-        */
-        
     }
 
     static float sink = 0.0f;
     void CheckFeet()
     {
-        //Update feet pos
-        m_leftFootTarPos = m_playerTran.position + (m_playerTran.rotation * m_leftFootOffset);        
-        m_rightFootTarPos = m_playerTran.position + (m_playerTran.rotation * m_rightFootOffset);
-
-        //Debug.Log("m_leftFootTarPos == " + m_leftFootTarPos.ToString() + " ; m_rightFootTarPos == " + m_rightFootTarPos.ToString());
-
         //Find lifted feet pos
         Vector3 leftFootLiftedPos = m_leftFootTarPos + new Vector3(0.0f, m_maxFootLift, 0.0f);
         Vector3 rightFootLiftedPos = m_rightFootTarPos + new Vector3(0.0f, m_maxFootLift, 0.0f);
 
-        //Debug.Log("leftFootLiftedPos == " + leftFootLiftedPos.ToString() + " ; rightFootLiftedPos == " + rightFootLiftedPos.ToString());
-
         //Check feet
         m_leftFootInter = Physics.Raycast(leftFootLiftedPos, Vector3.down, out m_interAtLeftFoot, m_maxFootFall + m_maxFootLift);
         m_rightFootInter = Physics.Raycast(rightFootLiftedPos, Vector3.down, out m_interAtRightFoot, m_maxFootFall + m_maxFootLift);
-       
+
         //Move left foot target
         if (m_leftFootInter)
         {
-            m_leftFootTarPos = m_interAtLeftFoot.point;
-
-#if UNITY_EDITOR   
-            //Debug.DrawLine(leftFootLiftedPos, leftFootLiftedPos + Vector3.down * m_interAtLeftFoot.distance, Color.red);
-            Debug.DrawLine(leftFootLiftedPos, m_leftFootTarPos, Color.red);
-#endif
-            //m_leftFootTarPos = leftFootLiftedPos + Vector3.down * (m_interAtLeftFoot.distance);
-            //m_leftFootTran.position += m_interAtLeftFoot.normal * m_surfOffset;                      
+            m_leftFootTarPos = m_interAtLeftFoot.point + (m_interAtLeftFoot.normal * m_surfOffset);
             m_leftFootTarRot = Quaternion.FromToRotation(Vector3.up, m_interAtLeftFoot.normal) * transform.rotation;                      
-        }
-        else
-        {
-            //m_leftFootTran.position = new Vector3(m_leftFootTran.position.x, m_playerTran.position.y, m_leftFootTran.position.z);
-            m_leftFootTarRot = transform.rotation;
-        }
+        }        
         
         //Move right foot target
         if (m_rightFootInter)
         {
-            m_rightFootTarPos = m_interAtRightFoot.point;
+            m_rightFootTarPos = m_interAtRightFoot.point + (m_interAtRightFoot.normal * m_surfOffset);
+            m_rightFootTarRot = Quaternion.FromToRotation(Vector3.up, m_interAtRightFoot.normal) * transform.rotation;
+        }      
 
 #if UNITY_EDITOR
-            //Debug.DrawLine(rightFootLiftedPos, rightFootLiftedPos + Vector3.down * m_interAtRightFoot.distance, Color.blue);
-            Debug.DrawLine(rightFootLiftedPos, m_rightFootTarPos, Color.blue);
+        Debug.DrawLine(leftFootLiftedPos, m_leftFootTarPos, (m_leftFootInter) ? Color.red : Color.white, 0.5f, false);
+        Debug.DrawLine(rightFootLiftedPos, m_rightFootTarPos, (m_rightFootInter) ? Color.blue : Color.white, 0.5f, false);
 #endif
-            //m_rightFootTarPos = rightFootLiftedPos + Vector3.down * (m_interAtRightFoot.distance);
-            //m_rightFootTran.position += m_interAtRightFoot.normal * m_surfOffset;
-            m_rightFootTarRot = Quaternion.FromToRotation(Vector3.up, m_interAtRightFoot.normal) * transform.rotation;
-        }
-        else
-        {
-            //m_rightFootTran.position = new Vector3(m_rightFootTran.position.x, m_playerTran.position.y, m_rightFootTran.position.z);
-            m_rightFootTarRot = transform.rotation;
-        }
 
-        //Debug.Log("m_leftFootTarPos == " + m_leftFootTarPos.ToString() + " ; m_rightFootTarPos == " + m_rightFootTarPos.ToString());
-
-        float footHeightDif = m_leftFootTarPos.y - m_rightFootTarPos.y;
-        if (footHeightDif < 0.0f)
+        float feetHeightDif = m_leftFootTarPos.y - m_rightFootTarPos.y;
+        if(feetHeightDif < 0.0f)
         {
-            footHeightDif = -footHeightDif;
+            feetHeightDif = -feetHeightDif;
         }
-
-        if(footHeightDif > m_sinkDamp)
-        {
-            sink = Mathf.Lerp(sink, footHeightDif, m_sinkDamp);
-        }
-        else
-        {
-            if(sink > m_sinkDamp)
-            {
-                sink = Mathf.Lerp(sink, 0.0f, m_sinkDamp);
-            }
-            else
-            {
-                sink = 0.0f;
-            }            
-        }
-        //m_playerCol.height = m_ColStartHeight - sink;
-        //m_playerCol.height = m_ColStartHeight - 0.2f;
+        sink = Mathf.Clamp(Mathf.Lerp(sink, feetHeightDif, m_sinkDamp), 0.0f, m_maxFootFall + m_maxFootLift);
         
-
-        /*
-        Debug.Log("\nCheckFeet()");
-        Debug.Log("m_leftFootBone.position == " + m_leftFootBone.position.ToString() + " ; m_leftFootBone.rotation == " + m_leftFootBone.rotation.ToString() + " ; m_leftFootOffset == " + m_leftFootOffset.ToString());
-        Debug.Log("m_rightFootBone.position == " + m_rightFootBone.position.ToString() + " ; m_rightFootBone.rotation == " + m_rightFootBone.rotation.ToString() + " ; m_rightFootOffset == " + m_rightFootOffset.ToString());
-        Debug.Log("m_leftFootTarPos == " + m_leftFootTarPos.ToString() + " ; m_rightFootTarPos == " + m_rightFootTarPos.ToString());
-        */
+        m_playerCol.height = m_ColStartHeight - sink;        
+        m_playerCol.center = m_ColStartCenter + new Vector3(0.0f, sink, 0.0f);        
     }
 
     void OnAnimatorIK(int layerIndex)
     {
+        //Update feet tar pos and rot
+        m_leftFootTarPos = m_playerTran.position + (m_playerTran.rotation * m_leftFootOffset);
+        m_rightFootTarPos = m_playerTran.position + (m_playerTran.rotation * m_rightFootOffset);
+        m_leftFootTarRot = transform.rotation;
+        m_rightFootTarRot = transform.rotation;
+
         if (!m_baseLayerState.IsName("Base Layer.Airborne"))
         {
             CheckFeet();
@@ -182,7 +114,7 @@ public class IKmanager : MonoBehaviour
         Debug.Log("m_leftFootTarPos == " + m_leftFootTarPos.ToString() + " ; m_rightFootTarPos == " + m_rightFootTarPos.ToString());
         */
 
-        Debug.Log("m_leftFootTarPos == " + m_leftFootTarPos.ToString() + " ; m_rightFootTarPos == " + m_rightFootTarPos.ToString());
+        //Debug.Log("m_leftFootTarPos == " + m_leftFootTarPos.ToString() + " ; m_rightFootTarPos == " + m_rightFootTarPos.ToString());
 
         //Left foot
         m_anim.SetIKPositionWeight(AvatarIKGoal.LeftFoot, m_anim.GetFloat("LeftFoot"));
