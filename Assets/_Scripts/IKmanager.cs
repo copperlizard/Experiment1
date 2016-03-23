@@ -5,14 +5,14 @@ public class IKmanager : MonoBehaviour
 {
     public GameObject m_camera;
        
-    public float m_footHeight, m_maxFootFall = 0.5f, m_maxFootLift = 0.5f, m_surfOffset = 0.1f, m_sinkDamp = 0.05f, m_checkSteps = 100.0f, m_headTurnSpeed = 10.0f;    
+    public float m_footHeight, m_maxFootFall = 0.5f, m_maxFootLift = 0.5f, m_surfOffset = 0.1f, m_sinkDamp = 0.05f, m_checkSteps = 100.0f, m_footWeightOffset = 0.1f, m_headTurnSpeed = 10.0f;    
 
     private Animator m_anim;
     private AnimatorStateInfo m_baseLayerState;
 
     private CapsuleCollider m_playerCol;
 
-    //private Rigidbody m_playerRB;
+    private Rigidbody m_playerRB;
 
     private Transform m_leftFootBone, m_rightFootBone, m_headBone;
     private Vector3 m_leftFootTarPos, m_rightFootTarPos, m_ColStartCenter, m_headLookTarPos;
@@ -38,7 +38,7 @@ public class IKmanager : MonoBehaviour
         m_ColStartHeight = m_playerCol.height;
         m_ColStartCenter = m_playerCol.center;
 
-        //m_playerRB = GetComponent<Rigidbody>(); //for finding player speed...
+        m_playerRB = GetComponent<Rigidbody>(); //for finding player speed...
     }
 	
 	// Update is called once per frame
@@ -76,12 +76,12 @@ public class IKmanager : MonoBehaviour
 
         //Find lifted feet pos
         Vector3 leftFootLiftedPos = m_leftFootTarPos + new Vector3(0.0f, m_maxFootLift + m_surfOffset - m_footHeight, 0.0f);
-        Vector3 rightFootLiftedPos = m_rightFootTarPos + new Vector3(0.0f, m_maxFootLift + m_surfOffset - m_footHeight, 0.0f);
+        Vector3 rightFootLiftedPos = m_rightFootTarPos + new Vector3(0.0f, m_maxFootLift + m_surfOffset - m_footHeight, 0.0f);       
 
         //Check feet
         m_leftFootInter = Physics.Raycast(leftFootLiftedPos, Vector3.down, out m_interAtLeftFoot, m_maxFootFall + m_maxFootLift);
         m_rightFootInter = Physics.Raycast(rightFootLiftedPos, Vector3.down, out m_interAtRightFoot, m_maxFootFall + m_maxFootLift);
-
+        
         //Move left foot target
         if (m_leftFootInter)
         {
@@ -116,34 +116,52 @@ public class IKmanager : MonoBehaviour
             {
                 m_rightSteps = 0.0f;
             }
-        }      
-
+        } 
+        
 #if UNITY_EDITOR
         Debug.DrawLine(leftFootLiftedPos, m_leftFootTarPos, (m_leftFootInter) ? Color.red : Color.white, 0.5f, false);
         Debug.DrawLine(rightFootLiftedPos, m_rightFootTarPos, (m_rightFootInter) ? Color.blue : Color.white, 0.5f, false);
 #endif  
 
-        //Find "heavier" foot distance from ground
-        if(leftFootWeight > rightFootWeight)
+        //Find "heavier" foot distance from ground (moving)
+        if(leftFootWeight > rightFootWeight + m_footWeightOffset && m_leftFootInter)
         {
             m_sink = Mathf.Clamp(Mathf.Lerp(m_sink, m_interAtLeftFoot.distance - m_maxFootLift, m_sinkDamp), 0.0f, m_maxFootFall + m_maxFootLift);
         }
-        else
+        else if(rightFootWeight > leftFootWeight + m_footWeightOffset && m_rightFootInter)
         {
             m_sink = Mathf.Clamp(Mathf.Lerp(m_sink, m_interAtRightFoot.distance - m_maxFootLift, m_sinkDamp), 0.0f, m_maxFootFall + m_maxFootLift);
+        }
+        else
+        {
+            //Find lower foot (stationary)
+            if (m_leftFootTarPos.y < m_rightFootTarPos.y && m_leftFootInter)
+            {
+                m_sink = Mathf.Clamp(Mathf.Lerp(m_sink, m_interAtLeftFoot.distance - m_maxFootLift, m_sinkDamp), 0.0f, m_maxFootFall + m_maxFootLift);
+            }
+            else if(m_rightFootInter)
+            {   
+                m_sink = Mathf.Clamp(Mathf.Lerp(m_sink, m_interAtRightFoot.distance - m_maxFootLift, m_sinkDamp), 0.0f, m_maxFootFall + m_maxFootLift);
+            }
+            else
+            {
+                Debug.Log("No Sink/Feet!");
+
+                m_sink = Mathf.Lerp(m_sink, 0.0f, m_sinkDamp);
+            }
         }
 
         //Adjust collider size to allow step 
         float weight = Mathf.Max(leftFootWeight, rightFootWeight);
         if (!m_baseLayerState.IsName("Base Layer.Crouching"))
         {                    
-            m_playerCol.height = m_ColStartHeight - (m_sink * weight);
-            m_playerCol.center = m_ColStartCenter + new Vector3(0.0f, m_sink * weight, 0.0f);
+            m_playerCol.height = m_ColStartHeight - (m_sink * weight) + m_footHeight;
+            m_playerCol.center = m_ColStartCenter + new Vector3(0.0f, m_sink * weight - m_footHeight, 0.0f);
         }
         else
         {            
-            m_playerCol.height = (m_ColStartHeight * 0.5f) - (m_sink * weight);
-            m_playerCol.center = m_ColStartCenter + new Vector3(0.0f, (m_sink * weight) - (m_ColStartCenter.y * 0.5f), 0.0f);
+            m_playerCol.height = (m_ColStartHeight * 0.5f) - (m_sink * weight) + m_footHeight;
+            m_playerCol.center = m_ColStartCenter + new Vector3(0.0f, (m_sink * weight) - (m_ColStartCenter.y * 0.5f) - m_footHeight, 0.0f);
         }                
     }
 
@@ -172,7 +190,7 @@ public class IKmanager : MonoBehaviour
         m_anim.SetIKRotationWeight(AvatarIKGoal.RightFoot, m_anim.GetFloat("RightFoot") * (m_rightSteps / m_checkSteps));
         m_anim.SetIKPosition(AvatarIKGoal.RightFoot, m_rightFootTarPos);
         m_anim.SetIKRotation(AvatarIKGoal.RightFoot, m_rightFootTarRot);
-
+        
         //Head
         m_anim.SetLookAtWeight(1.0f);
         m_anim.SetLookAtPosition(m_headLookTarPos);
