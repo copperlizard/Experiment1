@@ -30,6 +30,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 		CapsuleCollider m_Capsule;
 		bool m_Crouching;
 
+        private Vector3 m_RealMove;       
 
 		void Start()
 		{
@@ -50,10 +51,10 @@ namespace UnityStandardAssets.Characters.ThirdPerson
             // convert the world relative moveInput vector into a local-relative
             // turn amount and forward amount required to head in the desired
             // direction.   
-			move = transform.InverseTransformDirection(move);
+			Vector3 loacalMove = transform.InverseTransformDirection(move);
             CheckGroundStatus();
-			m_TurnAmount = Mathf.Atan2(move.x, move.z);
-			m_ForwardAmount = move.z;
+			m_TurnAmount = Mathf.Atan2(loacalMove.x, loacalMove.z);
+			m_ForwardAmount = loacalMove.z;
 
 			ApplyExtraTurnRotation();
 
@@ -71,7 +72,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 			PreventStandingInLowHeadroom();
 
 			// send input and other state parameters to the animator
-			UpdateAnimator(move);
+			UpdateAnimator(loacalMove);
 		}
 
         void ScaleCapsuleForCrouching(bool crouch)
@@ -109,46 +110,6 @@ namespace UnityStandardAssets.Characters.ThirdPerson
                 }
             }
         }
-
-        /*
-		void ScaleCapsuleForCrouching(bool crouch)
-		{
-			if (m_IsGrounded && crouch)
-			{
-				if (m_Crouching) return;
-				m_Capsule.height = m_CapsuleHeight / 2f;
-				//m_Capsule.center = m_Capsule.center / 2f; //not neccessary after groundcheckstatus modification
-				m_Crouching = true;
-			}
-			else
-			{
-				Ray crouchRay = new Ray(m_Rigidbody.position + Vector3.up * m_Capsule.radius * k_Half, Vector3.up);
-				float crouchRayLength = m_CapsuleHeight - m_Capsule.radius * k_Half;
-				if (Physics.SphereCast(crouchRay, m_Capsule.radius * k_Half, crouchRayLength, ~0, QueryTriggerInteraction.Ignore))
-				{
-					m_Crouching = true;
-					return;
-				}
-				m_Capsule.height = m_CapsuleHeight;
-                //m_Capsule.center = m_CapsuleCenter; //not neccessary after groundcheckstatus modification
-                m_Crouching = false;
-			}
-		}
-
-		void PreventStandingInLowHeadroom()
-		{
-			// prevent standing up in crouch-only zones
-			if (!m_Crouching)
-			{
-				Ray crouchRay = new Ray(m_Rigidbody.position + Vector3.up * m_Capsule.radius * k_Half, Vector3.up);
-				float crouchRayLength = m_CapsuleHeight - m_Capsule.radius * k_Half;
-				if (Physics.SphereCast(crouchRay, m_Capsule.radius * k_Half, crouchRayLength, ~0, QueryTriggerInteraction.Ignore))
-				{
-					m_Crouching = true;
-				}
-			}
-		}
-        */
 
         void UpdateAnimator(Vector3 move)
 		{
@@ -194,9 +155,9 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 			Vector3 extraGravityForce = (Physics.gravity * m_GravityMultiplier) - Physics.gravity;
 			m_Rigidbody.AddForce(extraGravityForce);
 
-            move = transform.TransformDirection(move);
+            //m_Rigidbody.AddForce(move * m_airControl);
 
-            m_Rigidbody.AddForce(move * m_airControl);
+            m_RealMove = move;
 
             m_GroundCheckDistance = m_Rigidbody.velocity.y < 0 ? m_OrigGroundCheckDistance : 0.01f;
 		}
@@ -204,7 +165,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 
 		void HandleGroundedMovement(Vector3 move, bool crouch, bool jump)
 		{
-            move = Vector3.ProjectOnPlane(move, m_GroundNormal);
+            m_RealMove = Vector3.ProjectOnPlane(move, m_GroundNormal);
 
             // check whether conditions are right to allow a jump:
             if (jump && !crouch && m_Animator.GetCurrentAnimatorStateInfo(0).IsName("Grounded"))
@@ -224,46 +185,28 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 			transform.Rotate(0, m_TurnAmount * turnSpeed * Time.deltaTime, 0);
 		}
 
-
+        
 		public void OnAnimatorMove()
 		{
 			// we implement this function to override the default root motion.
 			// this allows us to modify the positional speed before it's applied.
+            
 			if (m_IsGrounded && Time.deltaTime > 0)
 			{
-                Vector3 v = (m_Animator.deltaPosition * m_MoveSpeedMultiplier) / Time.deltaTime;                              
-
+                Vector3 v = (m_Animator.deltaPosition * m_MoveSpeedMultiplier) / Time.deltaTime;
+                
                 // we preserve the existing y part of the current velocity.
                 v.y = m_Rigidbody.velocity.y;
-				m_Rigidbody.velocity = v;
-			}            
+                m_Rigidbody.velocity = v;
+
+                //Debug.Log(m_Rigidbody.velocity.ToString());
+
+                //m_Rigidbody.AddForce(v);
+                //m_Rigidbody.MovePosition(m_Rigidbody.position + v * 0.02f);
+                //m_Rigidbody.MovePosition(m_Rigidbody.position + m_RealMove * v.magnitude * 0.01f); 
+                //m_Rigidbody.velocity = v;
+            }
         }
-
-
-        /* modified original to account for changes to player collider
-		void CheckGroundStatus()
-		{
-			RaycastHit hitInfo;
-#if UNITY_EDITOR
-			// helper to visualise the ground check ray in the scene view
-			Debug.DrawLine(transform.position + (Vector3.up * 0.1f), transform.position + (Vector3.up * 0.1f) + (Vector3.down * m_GroundCheckDistance));
-#endif
-			// 0.1f is a small offset to start the ray from inside the character
-			// it is also good to note that the transform position in the sample assets is at the base of the character
-			if (Physics.Raycast(transform.position + (Vector3.up * 0.1f), Vector3.down, out hitInfo, m_GroundCheckDistance))
-			{
-				m_GroundNormal = hitInfo.normal;
-				m_IsGrounded = true;
-				m_Animator.applyRootMotion = true;
-			}
-			else
-			{
-				m_IsGrounded = false;
-				m_GroundNormal = Vector3.up;
-				m_Animator.applyRootMotion = false;
-			}
-		}
-        */
 
         void CheckGroundStatus()
         {   
