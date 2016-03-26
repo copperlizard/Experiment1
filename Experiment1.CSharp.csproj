@@ -68,10 +68,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\_Scripts\CamFollowTarget.cs" />
     <Compile Include="Assets\_Scripts\IKmanager.cs" />
     <Compile Include="Assets\_Scripts\OrbitCam.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Raw Mocap Data\Animations\_CompleteAnimationList.txt" />
     <None Include="Assets\Standard Assets\Cameras\CameraGuidelines.txt" />
     <None Include="Assets\Standard Assets\Characters\FirstPersonCharacter\FirstPersonCharacterGuidelines.txt" />
     <None Include="Assets\Standard Assets\Characters\ThirdPersonCharacter\ThirdPersonCharacterGuidelines.txt" />

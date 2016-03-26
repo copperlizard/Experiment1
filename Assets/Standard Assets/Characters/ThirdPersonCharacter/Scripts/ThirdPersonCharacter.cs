@@ -30,7 +30,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 		CapsuleCollider m_Capsule;
 		bool m_Crouching;
 
-        private Vector3 m_RealMove;       
+        private Vector3 m_lastMove;       
 
 		void Start()
 		{
@@ -47,28 +47,30 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 
 		public void Move(Vector3 move, bool crouch, bool jump)
 		{
-
-            // convert the world relative moveInput vector into a local-relative
-            // turn amount and forward amount required to head in the desired
-            // direction.   
-			Vector3 loacalMove = transform.InverseTransformDirection(move);
             CheckGroundStatus();
-			m_TurnAmount = Mathf.Atan2(loacalMove.x, loacalMove.z);
-			m_ForwardAmount = loacalMove.z;
 
-			ApplyExtraTurnRotation();
-
-			// control and velocity handling is different when grounded and airborne:
-			if (m_IsGrounded)
-			{                
+            // control and velocity handling is different when grounded and airborne:
+            if (m_IsGrounded)
+			{
+                move = Vector3.ProjectOnPlane(move, m_GroundNormal);
                 HandleGroundedMovement(move, crouch, jump);
 			}
 			else
 			{
-				HandleAirborneMovement(move);
+				HandleAirborneMovement();
 			}
 
-			ScaleCapsuleForCrouching(crouch);
+            // convert the world relative moveInput vector into a local-relative
+            // turn amount and forward amount required to head in the desired
+            // direction.   
+            Vector3 loacalMove = transform.InverseTransformDirection(move);
+
+            m_TurnAmount = Mathf.Atan2(loacalMove.x, loacalMove.z);
+            m_ForwardAmount = loacalMove.z;
+
+            ApplyExtraTurnRotation();
+
+            ScaleCapsuleForCrouching(crouch);
 			PreventStandingInLowHeadroom();
 
 			// send input and other state parameters to the animator
@@ -149,24 +151,19 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 		}
 
 
-		void HandleAirborneMovement(Vector3 move)
+		void HandleAirborneMovement()
 		{
 			// apply extra gravity from multiplier:
 			Vector3 extraGravityForce = (Physics.gravity * m_GravityMultiplier) - Physics.gravity;
 			m_Rigidbody.AddForce(extraGravityForce);
 
             //m_Rigidbody.AddForce(move * m_airControl);
-
-            m_RealMove = move;
-
             m_GroundCheckDistance = m_Rigidbody.velocity.y < 0 ? m_OrigGroundCheckDistance : 0.01f;
 		}
 
 
 		void HandleGroundedMovement(Vector3 move, bool crouch, bool jump)
 		{
-            m_RealMove = Vector3.ProjectOnPlane(move, m_GroundNormal);
-
             // check whether conditions are right to allow a jump:
             if (jump && !crouch && m_Animator.GetCurrentAnimatorStateInfo(0).IsName("Grounded"))
 			{

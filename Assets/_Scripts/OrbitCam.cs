@@ -8,7 +8,7 @@ public class OrbitCam : MonoBehaviour
     public float m_minDist, m_maxDist, m_startDist, m_rotSpeed, m_damp, m_fudge;
     public bool m_HideCursor = true;
     public List<LayerMask> m_ignoreIntersect = new List<LayerMask>();
-
+    
     private RaycastHit m_interAt;
     private Quaternion m_rot;
     private Vector3 m_curVel = Vector3.zero;
@@ -16,7 +16,7 @@ public class OrbitCam : MonoBehaviour
 
 	// Use this for initialization
 	void Start()
-    {         
+    {            
         m_dist = m_startDist;
         transform.position = m_target.transform.position + new Vector3(0.0f, 0.0f, -m_dist);
 
