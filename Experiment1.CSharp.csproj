@@ -69,8 +69,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\_Scripts\CamFollowTarget.cs" />
+    <Compile Include="Assets\_Scripts\CannonController.cs" />
+    <Compile Include="Assets\_Scripts\CannonUserControl.cs" />
     <Compile Include="Assets\_Scripts\IKmanager.cs" />
     <Compile Include="Assets\_Scripts\OrbitCam.cs" />
+    <Compile Include="Assets\_Scripts\SwitchUserControl.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Raw Mocap Data\Animations\_CompleteAnimationList.txt" />
