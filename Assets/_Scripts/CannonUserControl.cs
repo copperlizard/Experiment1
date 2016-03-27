@@ -30,15 +30,8 @@ public class CannonUserControl : MonoBehaviour
 	// Update is called once per frame
 	void Update ()
     {
-        if (!m_fire1)
-        {
-            m_fire1 = Input.GetButtonDown("Fire1"); 
-        }
-
-        if (!m_fire2)
-        {
-            m_fire2 = Input.GetButtonDown("Fire2");
-        }
+        m_fire1 = Input.GetButton("Fire1"); 
+        m_fire2 = Input.GetButton("Fire2");
     }
 
     void FixedUpdate()
