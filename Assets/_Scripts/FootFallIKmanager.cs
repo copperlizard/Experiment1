@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class IKmanager : MonoBehaviour
+public class FootFallIKmanager : MonoBehaviour
 {
     public GameObject m_camera;
        

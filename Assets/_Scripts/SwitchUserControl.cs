@@ -9,6 +9,7 @@ public class SwitchUserControl : MonoBehaviour
     private CannonUserControl m_cannonControl;
     private OrbitCam m_camControl;
 
+    private float m_camDist;
     private bool m_inRange, m_switch, m_Tar1, m_Tar2;
 
     // Use this for initialization
@@ -62,6 +63,7 @@ public class SwitchUserControl : MonoBehaviour
 
                     m_cannonControl.enabled = false;
 
+                    m_camControl.SetCamDist(m_camDist);
                     m_camControl.m_target = m_camTar1;
                 }
                 else if(!m_Tar2)
@@ -73,6 +75,8 @@ public class SwitchUserControl : MonoBehaviour
 
                     m_cannonControl.enabled = true;
 
+                    m_camDist = m_camControl.GetCamDist();
+                    m_camControl.SetCamDist(0.0f);
                     m_camControl.m_target = m_CamTar2;
                 }
 

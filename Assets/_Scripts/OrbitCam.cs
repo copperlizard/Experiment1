@@ -101,6 +101,16 @@ public class OrbitCam : MonoBehaviour
         return target;
     }
 
+    public void SetCamDist(float dist)
+    {
+        m_dist = Mathf.Clamp(dist, m_minDist, m_maxDist);
+    }
+
+    public float GetCamDist()
+    {
+        return m_dist;
+    }
+
     /*
     float ClampAngle(float ang, float min, float max)
     {

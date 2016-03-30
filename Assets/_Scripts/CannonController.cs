@@ -40,14 +40,14 @@ public class CannonController : MonoBehaviour
 
     void CannonFire(bool fire1, bool fire2)
     {
-        if(fire1 && !m_fired1)
+        if (fire1 && !m_fired1)
         {
             m_charge1 = Time.time;
             m_fired1 = true; //fires when released
         }
-        else if(!fire1 && m_charge1 > 0.0f)
+        else if (!fire1 && m_charge1 > 0.0f)
         {
-            Debug.Log("fire1");
+            //Debug.Log("fire1");
             Debug.DrawLine(m_firePos1.position, m_firePos1.position - m_firePos1.forward * 10.0f);
 
             GameObject cannonball = m_ammo.GetObject();
@@ -60,38 +60,26 @@ public class CannonController : MonoBehaviour
             m_fired1 = false; //fired
         }
 
-        /*
-        if(fire1 && !m_fired1)
+        if (fire2 && !m_fired2)
         {
-            m_fired1 = true;
-
-            Debug.Log("fire1");
-            Debug.DrawLine(m_firePos1.position, m_firePos1.position - m_firePos1.forward * 10.0f);
+            m_charge2 = Time.time;
+            m_fired2 = true; //fires when released
+        }
+        else if (!fire2 && m_charge2 > 0.0f)
+        {
+            //Debug.Log("fire2");
+            Debug.DrawLine(m_firePos2.position, m_firePos2.position - m_firePos2.forward * 10.0f);
 
             GameObject cannonball = m_ammo.GetObject();
-            cannonball.transform.position = m_firePos1.position - m_firePos1.forward * 5.0f;
+            cannonball.transform.position = m_firePos2.position - m_firePos2.forward * 5.0f;
             Rigidbody cannonballRB = cannonball.GetComponent<Rigidbody>();
-            cannonballRB.velocity = -m_firePos1.forward * 10.0f;
-            cannonball.SetActive(true);            
-        }
-        
-        if(!fire1)
-        {
-            m_fired1 = false;
+            cannonballRB.velocity = -m_firePos2.forward * m_fireForce * Mathf.Clamp((Time.time - m_charge2 / m_chargeTime), 0.0f, 1.0f);
+            cannonball.SetActive(true);
+
+            m_charge2 = 0.0f;
+            m_fired2 = false; //fired
         }
 
-        if(fire2 && !m_fired2)
-        {
-            m_fired2 = true;
 
-            Debug.Log("fire2");
-            Debug.DrawLine(m_firePos2.position, m_firePos2.position - m_firePos2.forward * 10.0f);
-        }
-        
-        if(!fire2)
-        {
-            m_fired2 = false;
-        }
-        */
     }
 }

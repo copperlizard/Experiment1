@@ -7,10 +7,10 @@ public class ObjectPool : MonoBehaviour
     [HideInInspector]
     static public ObjectPool m_thisPool;
     public GameObject m_pooledObject;
-    public int m_poolStartSize;
+    public int m_poolStartSize = 10, m_grownPoolSize = 20, m_maxPoolSize = 1000;
     public bool m_grows = true;
 
-    private List<GameObject> m_objects;    
+    private List<GameObject> m_objects;      
 
     void Awake()
     {
@@ -38,7 +38,13 @@ public class ObjectPool : MonoBehaviour
 
     public GameObject GetObject()
     {
-        for(int i = 0; i < m_objects.Count; i++)
+        if (m_objects.Count > m_grownPoolSize)
+        {
+            //Debug.Log("try to clean");
+            CleanPool();
+        }
+
+        for (int i = 0; i < m_objects.Count; i++)
         {
             if(!m_objects[i].activeInHierarchy)
             {
@@ -46,7 +52,7 @@ public class ObjectPool : MonoBehaviour
             }
         }
 
-        if(m_grows)
+        if(m_grows && m_objects.Count <= m_maxPoolSize)
         {
             GameObject obj = (GameObject)Instantiate(m_pooledObject);
             m_objects.Add(obj);
@@ -54,5 +60,34 @@ public class ObjectPool : MonoBehaviour
         }
 
         return null;
+    }
+
+    public void CleanPool()
+    {
+        if (m_objects.Count <= m_grownPoolSize)
+        {
+            //Debug.Log("no need to clean");
+            return;
+        }
+
+        List<GameObject> objsToDestroy = new List<GameObject>();
+
+        for (int i = 0; i < m_objects.Count; i++)
+        {
+            if (!m_objects[i].activeInHierarchy)
+            {
+                objsToDestroy.Add(m_objects[i]);
+                m_objects.Remove(m_objects[i]);
+
+                //Debug.Log("object removed from m_objects");
+            }
+        }
+
+        foreach(GameObject obj in objsToDestroy)
+        {
+            Destroy(obj);
+
+            //Debug.Log("Destoryed object");
+        }        
     }
 }

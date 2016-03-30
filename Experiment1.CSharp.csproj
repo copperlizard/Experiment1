@@ -72,7 +72,8 @@
     <Compile Include="Assets\_Scripts\CannonBall.cs" />
     <Compile Include="Assets\_Scripts\CannonController.cs" />
     <Compile Include="Assets\_Scripts\CannonUserControl.cs" />
-    <Compile Include="Assets\_Scripts\IKmanager.cs" />
+    <Compile Include="Assets\_Scripts\DimLight.cs" />
+    <Compile Include="Assets\_Scripts\FootFallIKmanager.cs" />
     <Compile Include="Assets\_Scripts\ObjectPool.cs" />
     <Compile Include="Assets\_Scripts\OrbitCam.cs" />
     <Compile Include="Assets\_Scripts\SwitchUserControl.cs" />
