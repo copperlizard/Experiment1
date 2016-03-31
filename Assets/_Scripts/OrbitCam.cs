@@ -22,7 +22,7 @@ public class OrbitCam : MonoBehaviour
 
         if(m_HideCursor)
         {
-            Cursor.lockState = CursorLockMode.Confined;
+            Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
         else

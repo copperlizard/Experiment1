@@ -8,6 +8,7 @@ public class SwitchUserControl : MonoBehaviour
     private UnityStandardAssets.Characters.ThirdPerson.ThirdPersonUserControl m_playerControl;
     private CannonUserControl m_cannonControl;
     private OrbitCam m_camControl;
+    private Rigidbody m_playerRB;
 
     private float m_camDist;
     private bool m_inRange, m_switch, m_Tar1, m_Tar2;
@@ -21,6 +22,8 @@ public class SwitchUserControl : MonoBehaviour
         m_Tar2 = false;
 
         m_playerControl = m_player.GetComponent<UnityStandardAssets.Characters.ThirdPerson.ThirdPersonUserControl>();
+        m_playerRB = m_player.GetComponent<Rigidbody>();
+
         m_cannonControl = GetComponent<CannonUserControl>();
 
         m_cannonControl.enabled = false;
@@ -60,6 +63,7 @@ public class SwitchUserControl : MonoBehaviour
                     m_Tar2 = false;
 
                     m_playerControl.m_ForceIdle = false;
+                    m_playerRB.isKinematic = false;
 
                     m_cannonControl.enabled = false;
 
@@ -72,6 +76,7 @@ public class SwitchUserControl : MonoBehaviour
                     m_Tar1 = false;
 
                     m_playerControl.m_ForceIdle = true;
+                    m_playerRB.isKinematic = true;
 
                     m_cannonControl.enabled = true;
 

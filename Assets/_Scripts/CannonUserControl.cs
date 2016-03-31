@@ -10,7 +10,7 @@ public class CannonUserControl : MonoBehaviour
     private bool m_fire1, m_fire2;
 
     // Use this for initialization
-    void Start ()
+    void Awake ()
     {
         // get the transform of the main camera
         if (Camera.main != null)
@@ -37,5 +37,15 @@ public class CannonUserControl : MonoBehaviour
     void FixedUpdate()
     {
         m_cannon.Move(m_Cam.transform.rotation, m_fire1, m_fire2);
+    }
+
+    void OnDisable()
+    {
+        m_cannon.m_audio.m_audio1.Stop();
+    }
+
+    void OnEnable()
+    {
+        m_cannon.m_audio.m_audio1.Play();
     }
 }
