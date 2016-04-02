@@ -76,6 +76,7 @@
     <Compile Include="Assets\_Scripts\FootFallIKmanager.cs" />
     <Compile Include="Assets\_Scripts\ObjectPool.cs" />
     <Compile Include="Assets\_Scripts\OrbitCam.cs" />
+    <Compile Include="Assets\_Scripts\RobotWeapons.cs" />
     <Compile Include="Assets\_Scripts\SwitchUserControl.cs" />
   </ItemGroup>
   <ItemGroup>

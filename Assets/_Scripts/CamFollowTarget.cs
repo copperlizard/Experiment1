@@ -33,11 +33,5 @@ public class CamFollowTarget : MonoBehaviour
         {   
             transform.position = m_target.transform.position - new Vector3(0.0f, m_bob, 0.0f);
         }
-        
-        
-
-       
-
-
     }
 }

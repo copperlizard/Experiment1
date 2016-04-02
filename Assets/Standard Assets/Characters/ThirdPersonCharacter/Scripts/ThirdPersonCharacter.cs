@@ -28,7 +28,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 		float m_CapsuleHeight;
 		Vector3 m_CapsuleCenter;
 		CapsuleCollider m_Capsule;
-		bool m_Crouching;
+		bool m_Crouching;                
 
 		void Start()
 		{
@@ -43,11 +43,11 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 		}
 
 
+
 		public void Move(Vector3 move, bool crouch, bool jump)
 		{
-            CheckGroundStatus();
-
             // control and velocity handling is different when grounded and airborne:
+            CheckGroundStatus();
             if (m_IsGrounded)
 			{
                 move = Vector3.ProjectOnPlane(move, m_GroundNormal);

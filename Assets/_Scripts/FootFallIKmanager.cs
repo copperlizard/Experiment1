@@ -5,7 +5,7 @@ public class FootFallIKmanager : MonoBehaviour
 {
     public GameObject m_camera;
        
-    public float m_footHeight, m_maxFootFall = 0.5f, m_maxFootLift = 0.5f, m_surfOffset = 0.1f, m_sinkDamp = 0.05f, m_checkSteps = 100.0f, m_footWeightOffset = 0.1f, m_headTurnSpeed = 10.0f;
+    public float m_footHeight, m_maxFootFall = 0.5f, m_maxFootLift = 0.5f, m_surfOffset = 0.1f, m_sinkDamp = 0.05f, m_checkSteps = 10.0f, m_footWeightOffset = 0.1f;
 
     [System.Serializable]
     public class Audio
@@ -26,8 +26,8 @@ public class FootFallIKmanager : MonoBehaviour
 
     //private Rigidbody m_playerRB;
 
-    private Transform m_leftFootBone, m_rightFootBone, m_headBone;
-    private Vector3 m_leftFootTarPos, m_rightFootTarPos, m_ColStartCenter, m_headLookTarPos;
+    private Transform m_leftFootBone, m_rightFootBone;
+    private Vector3 m_leftFootTarPos, m_rightFootTarPos, m_ColStartCenter;
     private Quaternion m_leftFootTarRot, m_rightFootTarRot;    
 
     private RaycastHit m_interAtLeftFoot, m_interAtRightFoot;
@@ -43,8 +43,7 @@ public class FootFallIKmanager : MonoBehaviour
         m_anim = GetComponent<Animator>();
 
         m_leftFootBone = m_anim.GetBoneTransform(HumanBodyBones.LeftFoot);
-        m_rightFootBone = m_anim.GetBoneTransform(HumanBodyBones.RightFoot);
-        m_headBone = m_anim.GetBoneTransform(HumanBodyBones.Head);               
+        m_rightFootBone = m_anim.GetBoneTransform(HumanBodyBones.RightFoot);                      
 
         m_playerCol = GetComponent<CapsuleCollider>();
         m_ColStartHeight = m_playerCol.height;
@@ -252,19 +251,12 @@ public class FootFallIKmanager : MonoBehaviour
         }
     }
 
-    void HeadLook()
-    {        
-        m_headLookTarPos = m_headBone.position - (m_camera.transform.position - m_headBone.position);
-    }
-
     void OnAnimatorIK(int layerIndex)
     {
         if (!m_baseLayerState.IsName("Base Layer.Airborne"))
         {
             CheckFeet();
         }
-
-        HeadLook();
         
         //Left foot
         m_anim.SetIKPositionWeight(AvatarIKGoal.LeftFoot, m_anim.GetFloat("LeftFoot") * (m_leftSteps / m_checkSteps));
@@ -277,10 +269,6 @@ public class FootFallIKmanager : MonoBehaviour
         m_anim.SetIKRotationWeight(AvatarIKGoal.RightFoot, m_anim.GetFloat("RightFoot") * (m_rightSteps / m_checkSteps));
         m_anim.SetIKPosition(AvatarIKGoal.RightFoot, m_rightFootTarPos);
         m_anim.SetIKRotation(AvatarIKGoal.RightFoot, m_rightFootTarRot);
-        
-        //Head
-        m_anim.SetLookAtWeight(1.0f);
-        m_anim.SetLookAtPosition(m_headLookTarPos);
     }
 
 

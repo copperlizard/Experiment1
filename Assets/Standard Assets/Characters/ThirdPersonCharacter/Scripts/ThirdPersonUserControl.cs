@@ -4,7 +4,7 @@ using UnityStandardAssets.CrossPlatformInput;
 
 namespace UnityStandardAssets.Characters.ThirdPerson
 {
-    [RequireComponent(typeof (ThirdPersonCharacter))]
+    [RequireComponent(typeof (ThirdPersonCharacter))]   
     public class ThirdPersonUserControl : MonoBehaviour
     {
         public bool m_ForceIdle = false;
@@ -13,8 +13,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
         private Transform m_Cam;                  // A reference to the main camera in the scenes transform
         private Vector3 m_CamForward;             // The current forward direction of the camera
         private Vector3 m_Move;
-        private bool m_Jump;                      // the world-relative desired move direction, calculated from the camForward and user input.
-
+        private bool m_Jump;                      // the world-relative desired move direction, calculated from the camForward and user input.        
         
         private void Start()
         {
@@ -34,7 +33,6 @@ namespace UnityStandardAssets.Characters.ThirdPerson
             m_Character = GetComponent<ThirdPersonCharacter>();
         }
 
-
         private void Update()
         {
             if (!m_Jump)
@@ -42,7 +40,6 @@ namespace UnityStandardAssets.Characters.ThirdPerson
                 m_Jump = CrossPlatformInputManager.GetButtonDown("Jump");
             }
         }
-
 
         // Fixed update is called in sync with physics
         private void FixedUpdate()
