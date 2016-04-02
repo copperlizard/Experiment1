@@ -7,30 +7,34 @@ using System.Collections.Generic;
 public class RobotWeapons : MonoBehaviour
 {
     public List<GameObject> m_lazers = new List<GameObject>();
+    public ObjectPool m_pulseBlastAmmo;
 
     public GameObject m_cam;
     public Transform m_camPivot;
     public Vector3 m_lazerAimOffset, m_pulseBlastAimOffset;
-    public float m_lazerAimDist, m_pulseBlastAimDist, m_minTarDist = 1.0f, m_maxTarDist = 500.0f;
+    public float m_lazerForce = 30.0f, m_lazerAimDist, m_pulseBlastAimDist, m_minTarDist = 1.0f, m_maxTarDist = 500.0f, m_handAimSpeed = 0.1f;
     public bool m_weaponsIdle = false;
 
     private List<LineRenderer> m_lazerRends = new List<LineRenderer>();
 
     private Animator m_anim;
-    private Transform m_headBoneTran;    
+    private Transform m_headBoneTran, m_rightHandTran, m_chestTran;    
     private OrbitCam m_camControl;
     private UnityStandardAssets.Characters.ThirdPerson.ThirdPersonCharacter m_playerControl;
     private UnityStandardAssets.Characters.ThirdPerson.ThirdPersonUserControl m_playerUserControl;
+    private RaycastHit m_hit;
     private Vector3 m_camPivotStartPos, m_headLookTarPos;
-    private float m_prevDist, m_turnCheck;
+    private float m_prevDist, m_turnCheck, m_handAimWeight;
     private int m_wepMode = 0, m_numWepModes = 2;
-    private bool m_fire1, m_fire2, m_1, m_2, m_jump, m_crouch, m_aimed = false, m_pulseBlasted = false;
+    private bool m_fire1, m_fire2, m_1, m_2, m_jump, m_crouch, m_aimed = false, m_pulseBlasted = false, m_headTar;
 
     // Use this for initialization
     void Start ()
     {
         m_anim = GetComponent<Animator>();
-        m_headBoneTran = m_anim.GetBoneTransform(HumanBodyBones.Head);              
+        m_headBoneTran = m_anim.GetBoneTransform(HumanBodyBones.Head);
+        m_rightHandTran = m_anim.GetBoneTransform(HumanBodyBones.RightHand);
+        m_chestTran = m_anim.GetBoneTransform(HumanBodyBones.Chest);              
 
         m_camControl = m_cam.GetComponent<OrbitCam>();
         m_camPivotStartPos = transform.InverseTransformPoint(m_camPivot.transform.position);
@@ -89,7 +93,6 @@ public class RobotWeapons : MonoBehaviour
             ManageWeapon(false, false);
             m_weaponsIdle = true;
         }
-     
     }
 
     void OnAnimatorIK(int layerIndex)
@@ -97,14 +100,24 @@ public class RobotWeapons : MonoBehaviour
         //Head
         m_anim.SetLookAtWeight(1.0f);
         m_anim.SetLookAtPosition(m_headLookTarPos);
+
+        //right Hand
+        m_anim.SetIKPositionWeight(AvatarIKGoal.RightHand, m_handAimWeight);
+        m_anim.SetIKRotationWeight(AvatarIKGoal.RightHand, m_handAimWeight);
+        m_anim.SetIKPosition(AvatarIKGoal.RightHand, m_headLookTarPos);         //Adjust this to be closer??
+        m_anim.SetIKRotation(AvatarIKGoal.RightHand, m_cam.transform.rotation);
+
+        //Chest
+        m_anim.SetBoneLocalRotation(HumanBodyBones.Chest, m_cam.transform.rotation);
+        //m_anim.SetIKRotation(AvatarIKGoal.Chest, Quaternion.Euler(0.0f, m_cam.transform.rotation.eulerAngles.y, 0.0f));
     }
 
     void HeadLook()
     {
-        RaycastHit hit;
-        if (Physics.Raycast(m_headBoneTran.position, m_cam.transform.forward, out hit, m_maxTarDist))
+        m_headTar = Physics.Raycast(m_headBoneTran.position, m_cam.transform.forward, out m_hit, m_maxTarDist);
+        if (m_headTar)
         {
-            m_headLookTarPos = hit.point;
+            m_headLookTarPos = m_hit.point;
         }
         else
         {
@@ -150,15 +163,9 @@ public class RobotWeapons : MonoBehaviour
                 Debug.Log("Aim LazerEyes()");
                 m_aimed = true;
                 CamAim(m_lazerAimOffset, m_lazerAimDist);
-            }
+            }       
             
-            //Ensure facing forward enough
-            if(m_turnCheck < 0.0f)
-            {
-                            
-            }            
-            
-            if(fire1)
+            if(fire1 && m_turnCheck > 0.0f)
             {
                 //Fire
                 Debug.Log("LAZERS!!!!");
@@ -175,7 +182,12 @@ public class RobotWeapons : MonoBehaviour
                     {
                         m_lazerRends[i].enabled = true;
                     }                    
-                }                
+                }
+
+                if(m_headTar && m_hit.rigidbody != null)
+                {
+                    m_hit.collider.attachedRigidbody.AddForceAtPosition((m_headLookTarPos - m_headBoneTran.position).normalized * m_lazerForce, m_headLookTarPos);
+                }                               
             }
             else
             {
@@ -218,10 +230,10 @@ public class RobotWeapons : MonoBehaviour
                 CamAim(m_pulseBlastAimOffset, m_pulseBlastAimDist);
             }
 
-            //Ensure facing forward enough
+            m_handAimWeight = Mathf.Lerp(m_handAimWeight, 1.0f, m_handAimSpeed);
 
 
-            if (fire1 && !m_pulseBlasted)
+            if (fire1 && !m_pulseBlasted && m_turnCheck > 0.0f)
             {
                 //Fire
                 m_pulseBlasted = true;
@@ -237,6 +249,8 @@ public class RobotWeapons : MonoBehaviour
             m_aimed = false;
             ResetCam();
         }
+
+        m_handAimWeight = Mathf.Lerp(m_handAimWeight, 0.0f, m_handAimSpeed);
     }
 
     void ManageWeapon(bool fire1, bool fire2)
