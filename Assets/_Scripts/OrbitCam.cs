@@ -68,10 +68,23 @@ public class OrbitCam : MonoBehaviour
     {
         //If intersection (cast ray from player to camera)
         if (Physics.Raycast(m_target.transform.position, target - m_target.transform.position, out m_interAt, m_dist))
-        {                     
+        {
+            //Ignoring objects tagged player
+            if (m_interAt.rigidbody != null)
+            {
+                if (m_interAt.rigidbody.gameObject.tag == "Player")
+                {
+                    return target;
+                }
+            }         
+
+#if UNITY_EDITOR
+            Debug.DrawLine(m_target.transform.position, m_interAt.point, Color.yellow, 0.01f, true);
+#endif
+
             float tDist = 0.0f;
             
-            //If ignoring layers...            
+            //If ignoring object layers...            
             if(m_ignoreIntersect.Count > 0)
             {
                 bool ignore = false;

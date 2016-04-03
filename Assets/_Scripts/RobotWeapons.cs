@@ -18,7 +18,7 @@ public class RobotWeapons : MonoBehaviour
     private List<LineRenderer> m_lazerRends = new List<LineRenderer>();
 
     private Animator m_anim;
-    private Transform m_headBoneTran, m_rightHandTran, m_chestTran;    
+    private Transform m_headBoneTran, m_rightHandTran, m_spineTran;
     private OrbitCam m_camControl;
     private UnityStandardAssets.Characters.ThirdPerson.ThirdPersonCharacter m_playerControl;
     private UnityStandardAssets.Characters.ThirdPerson.ThirdPersonUserControl m_playerUserControl;
@@ -26,7 +26,7 @@ public class RobotWeapons : MonoBehaviour
     private Vector3 m_camPivotStartPos, m_headLookTarPos;
     private float m_prevDist, m_turnCheck, m_handAimWeight;
     private int m_wepMode = 0, m_numWepModes = 2;
-    private bool m_fire1, m_fire2, m_1, m_2, m_jump, m_crouch, m_aimed = false, m_pulseBlasted = false, m_headTar;
+    private bool m_fire1, m_fire2, m_1, m_2, m_aimed = false, m_pulseBlasted = false, m_headTar;
 
     // Use this for initialization
     void Start ()
@@ -34,7 +34,7 @@ public class RobotWeapons : MonoBehaviour
         m_anim = GetComponent<Animator>();
         m_headBoneTran = m_anim.GetBoneTransform(HumanBodyBones.Head);
         m_rightHandTran = m_anim.GetBoneTransform(HumanBodyBones.RightHand);
-        m_chestTran = m_anim.GetBoneTransform(HumanBodyBones.Chest);              
+        m_spineTran = m_anim.GetBoneTransform(HumanBodyBones.Spine);                             
 
         m_camControl = m_cam.GetComponent<OrbitCam>();
         m_camPivotStartPos = transform.InverseTransformPoint(m_camPivot.transform.position);
@@ -54,14 +54,7 @@ public class RobotWeapons : MonoBehaviour
 	void Update ()
     {
         m_fire1 = Input.GetButton("Fire1");
-        m_fire2 = Input.GetButton("Fire2");
-
-        if (!m_jump)
-        {
-            m_jump = Input.GetButtonDown("Jump");
-        }
-
-        m_crouch = Input.GetKey(KeyCode.C);
+        m_fire2 = Input.GetButton("Fire2");        
 
         //1 key press at a time; given to lowest number
         m_1 = Input.GetKeyDown(KeyCode.Alpha1);
@@ -101,15 +94,22 @@ public class RobotWeapons : MonoBehaviour
         m_anim.SetLookAtWeight(1.0f);
         m_anim.SetLookAtPosition(m_headLookTarPos);
 
-        //right Hand
         m_anim.SetIKPositionWeight(AvatarIKGoal.RightHand, m_handAimWeight);
         m_anim.SetIKRotationWeight(AvatarIKGoal.RightHand, m_handAimWeight);
-        m_anim.SetIKPosition(AvatarIKGoal.RightHand, m_headLookTarPos);         //Adjust this to be closer??
+        m_anim.SetIKPosition(AvatarIKGoal.RightHand, m_headLookTarPos);         
         m_anim.SetIKRotation(AvatarIKGoal.RightHand, m_cam.transform.rotation);
 
-        //Chest
-        m_anim.SetBoneLocalRotation(HumanBodyBones.Chest, m_cam.transform.rotation);
-        //m_anim.SetIKRotation(AvatarIKGoal.Chest, Quaternion.Euler(0.0f, m_cam.transform.rotation.eulerAngles.y, 0.0f));
+        //Twist Spine
+        if (m_fire2 && m_wepMode == 1 && m_turnCheck > 0.0f)
+        {
+            float turnLeftCheck = Mathf.Clamp( Vector3.Dot(m_cam.transform.forward, -transform.right), 0.0f, 1.0f);
+
+            if(turnLeftCheck > 0.0f)
+            {
+                Quaternion thisRot = m_spineTran.localRotation * Quaternion.Euler(-m_cam.transform.rotation.eulerAngles.y, 0.0f, 0.0f);
+                m_anim.SetBoneLocalRotation(HumanBodyBones.Spine, thisRot);
+            }            
+        }
     }
 
     void HeadLook()
@@ -132,7 +132,7 @@ public class RobotWeapons : MonoBehaviour
         if (mode > m_numWepModes - 1)
         {
             return false;
-        }
+        }        
 
         m_wepMode = mode;
         return true;
@@ -140,8 +140,22 @@ public class RobotWeapons : MonoBehaviour
 
     void CamAim(Vector3 offset, float dist)
     {
-        m_camPivot.transform.localPosition = m_camPivotStartPos + offset;
-        m_prevDist = m_camControl.GetCamDist();
+        //Vector3 newPivPos = (Quaternion.Euler(0.0f, m_cam.transform.rotation.eulerAngles.y, 0.0f) * (m_camPivotStartPos + offset));
+
+        //Debug.Log("newPivPos == " + newPivPos.ToString());
+
+        //m_camPivot.transform.localPosition = Vector3.Lerp(m_camPivot.transform.localPosition, newPivPos, 0.5f); 
+        //m_camPivot.transform.position = transform.TransformPoint(newPivPos);
+
+        //m_camPivot.transform.position = transform.TransformPoint(m_camPivotStartPos + offset);
+        //m_camPivot.transform.RotateAround(transform.position, Vector3.up, m_cam.transform.rotation.eulerAngles.y);
+
+        //CAM PIVOT ROTATES WITH THE PLAYER!!!!
+
+
+
+
+
         m_camControl.SetCamDist(dist);
 
         m_aimed = true;
@@ -157,18 +171,24 @@ public class RobotWeapons : MonoBehaviour
     {
         if(fire2)
         {
-            //Aim            
-            if(!m_aimed)
+            if (!m_aimed)
             {
-                Debug.Log("Aim LazerEyes()");
+                //Debug.Log("Aim LazerEyes()");
                 m_aimed = true;
-                CamAim(m_lazerAimOffset, m_lazerAimDist);
-            }       
-            
-            if(fire1 && m_turnCheck > 0.0f)
+
+                m_prevDist = m_camControl.GetCamDist();
+            }
+
+            //Aim    
+            CamAim(m_lazerAimOffset, m_lazerAimDist);
+
+            //Rest hand
+            m_handAimWeight = Mathf.Lerp(m_handAimWeight, 0.0f, m_handAimSpeed);
+
+            if (fire1 && m_turnCheck > 0.0f)
             {
                 //Fire
-                Debug.Log("LAZERS!!!!");
+                //Debug.Log("LAZERS!!!!");
 
                 //Set lazer vert's and enable
                 for(int i = 0; i < m_lazers.Count; i++)
@@ -222,16 +242,19 @@ public class RobotWeapons : MonoBehaviour
     {
         if(fire2)
         {
-            //Aim            
             if (!m_aimed)
             {
-                Debug.Log("Aim PulseBlast");
+                //Debug.Log("Aim PulseBlast");
                 m_aimed = true;
-                CamAim(m_pulseBlastAimOffset, m_pulseBlastAimDist);
+
+                m_prevDist = m_camControl.GetCamDist();
             }
 
-            m_handAimWeight = Mathf.Lerp(m_handAimWeight, 1.0f, m_handAimSpeed);
+            //Aim
+            CamAim(m_pulseBlastAimOffset, m_pulseBlastAimDist);
 
+            //Lift hand
+            m_handAimWeight = Mathf.Lerp(m_handAimWeight, (m_turnCheck > 0.0f) ? 1.0f : 0.0f, m_handAimSpeed);
 
             if (fire1 && !m_pulseBlasted && m_turnCheck > 0.0f)
             {
