@@ -10,9 +10,10 @@ public class RobotWeapons : MonoBehaviour
     public ObjectPool m_pulseBlastAmmo;
 
     public GameObject m_cam;
-    public Transform m_camPivot;
+    public Transform m_camPivot, m_pulseBlastFireTran;
     public Vector3 m_lazerAimOffset, m_pulseBlastAimOffset;
-    public float m_lazerForce = 30.0f, m_lazerAimDist, m_pulseBlastAimDist, m_minTarDist = 1.0f, m_maxTarDist = 500.0f, m_handAimSpeed = 0.1f;
+    public float m_lazerForce = 30.0f, m_lazerAimDist, m_pulseBlastAimDist, m_pulseBlastVelocity = 3.0f, m_minTarDist = 1.0f, 
+        m_maxTarDist = 500.0f, m_aimingPlayerTurnSpeed = 20.0f, m_aimingPlayerTurnInertia = 0.1f, m_handAimSpeed = 0.1f;
     public bool m_weaponsIdle = false;
 
     private List<LineRenderer> m_lazerRends = new List<LineRenderer>();
@@ -24,7 +25,7 @@ public class RobotWeapons : MonoBehaviour
     private UnityStandardAssets.Characters.ThirdPerson.ThirdPersonUserControl m_playerUserControl;
     private RaycastHit m_hit;
     private Vector3 m_camPivotStartPos, m_headLookTarPos;
-    private float m_prevDist, m_turnCheck, m_handAimWeight;
+    private float m_prevDist, m_turnCheck, m_turning, m_handAimWeight;
     private int m_wepMode = 0, m_numWepModes = 2;
     private bool m_fire1, m_fire2, m_1, m_2, m_aimed = false, m_pulseBlasted = false, m_headTar;
 
@@ -77,6 +78,7 @@ public class RobotWeapons : MonoBehaviour
         if(!m_playerUserControl.m_ForceIdle)
         {
             HeadLook();
+            RotatePlayer();
             ManageWeapon(m_fire1, m_fire2);
 
             m_weaponsIdle = false;
@@ -99,17 +101,19 @@ public class RobotWeapons : MonoBehaviour
         m_anim.SetIKPosition(AvatarIKGoal.RightHand, m_headLookTarPos);         
         m_anim.SetIKRotation(AvatarIKGoal.RightHand, m_cam.transform.rotation);
 
+        
         //Twist Spine
         if (m_fire2 && m_wepMode == 1 && m_turnCheck > 0.0f)
         {
             float turnLeftCheck = Mathf.Clamp( Vector3.Dot(m_cam.transform.forward, -transform.right), 0.0f, 1.0f);
 
             if(turnLeftCheck > 0.0f)
-            {
-                Quaternion thisRot = m_spineTran.localRotation * Quaternion.Euler(-m_cam.transform.rotation.eulerAngles.y, 0.0f, 0.0f);
-                m_anim.SetBoneLocalRotation(HumanBodyBones.Spine, thisRot);
+            {                
+                m_spineTran.transform.RotateAround(m_spineTran.transform.position, transform.up, m_cam.transform.rotation.eulerAngles.y - transform.rotation.eulerAngles.y);
+                m_anim.SetBoneLocalRotation(HumanBodyBones.Spine, m_spineTran.localRotation);
             }            
         }
+        
     }
 
     void HeadLook()
@@ -124,7 +128,43 @@ public class RobotWeapons : MonoBehaviour
             m_headLookTarPos = m_cam.transform.position + m_cam.transform.forward * m_maxTarDist;
         }
 
-        m_turnCheck = Vector3.Dot((m_headLookTarPos - transform.position), transform.forward);        
+        m_turnCheck = Vector3.Dot((m_headLookTarPos - transform.position).normalized, transform.forward);        
+    }
+
+    void RotatePlayer()
+    {
+        if(m_fire2)
+        {
+            Vector3 move = m_anim.deltaPosition.normalized;
+            
+            if(Vector3.Dot(m_cam.transform.forward, move) > 0.0f || move.magnitude == 0.0f)
+            {
+                if (m_turnCheck <= 0.0f)
+                {
+                    m_turning = Mathf.Lerp(m_turning, 1.0f, m_aimingPlayerTurnInertia);
+                }
+                else
+                {
+                    m_turning = Mathf.Lerp(m_turning, 0.0f, m_aimingPlayerTurnInertia);
+                }
+
+                if (m_turning > 0.0f)
+                {
+                    float rigthCheck = Vector3.Dot((m_headLookTarPos - transform.position).normalized, transform.right);
+
+                    if (rigthCheck >= 0.0f)
+                    {
+                        //Debug.Log("turn right");
+                        transform.RotateAround(transform.position, transform.up, Mathf.Max(m_aimingPlayerTurnSpeed * -m_turnCheck, 0.1f));
+                    }
+                    else
+                    {
+                        //Debug.Log("turn left");
+                        transform.RotateAround(transform.position, transform.up, -Mathf.Max(m_aimingPlayerTurnSpeed * -m_turnCheck, 0.1f));
+                    }
+                }
+            }
+        }
     }
 
     public bool SetWeaponMode(int mode)
@@ -140,21 +180,8 @@ public class RobotWeapons : MonoBehaviour
 
     void CamAim(Vector3 offset, float dist)
     {
-        //Vector3 newPivPos = (Quaternion.Euler(0.0f, m_cam.transform.rotation.eulerAngles.y, 0.0f) * (m_camPivotStartPos + offset));
-
-        //Debug.Log("newPivPos == " + newPivPos.ToString());
-
-        //m_camPivot.transform.localPosition = Vector3.Lerp(m_camPivot.transform.localPosition, newPivPos, 0.5f); 
-        //m_camPivot.transform.position = transform.TransformPoint(newPivPos);
-
-        //m_camPivot.transform.position = transform.TransformPoint(m_camPivotStartPos + offset);
-        //m_camPivot.transform.RotateAround(transform.position, Vector3.up, m_cam.transform.rotation.eulerAngles.y);
-
-        //CAM PIVOT ROTATES WITH THE PLAYER!!!!
-
-
-
-
+        m_camPivot.transform.localPosition = m_camPivotStartPos + offset;
+        m_camPivot.transform.RotateAround(transform.position, transform.up, m_cam.transform.rotation.eulerAngles.y - transform.rotation.eulerAngles.y);
 
         m_camControl.SetCamDist(dist);
 
@@ -260,7 +287,15 @@ public class RobotWeapons : MonoBehaviour
             {
                 //Fire
                 m_pulseBlasted = true;
-                Debug.Log("PULSE BLAST!!!");
+
+                GameObject blast = m_pulseBlastAmmo.GetObject();
+                blast.transform.position = m_pulseBlastFireTran.position;
+
+                Rigidbody blastRB = blast.GetComponent<Rigidbody>();
+
+                blastRB.velocity = (m_headLookTarPos - m_pulseBlastFireTran.position).normalized * m_pulseBlastVelocity;
+
+                blast.SetActive(true);
             }
             else if(!fire1 && m_pulseBlasted)
             {

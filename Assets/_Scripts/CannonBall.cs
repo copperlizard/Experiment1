@@ -33,7 +33,8 @@ public class CannonBall : MonoBehaviour
     {
         //m_rb = GetComponent<Rigidbody>();
         m_startTime = Time.time;        
-        m_rb.detectCollisions = true;        
+        m_rb.detectCollisions = true;
+        m_rb.WakeUp();        
         m_ball.SetActive(true);
         StartCoroutine(DeactivateTimer(m_maxLife));
     }
@@ -48,7 +49,7 @@ public class CannonBall : MonoBehaviour
     {
         //Debug.Log("hit " + other.gameObject.name.ToString());
 
-        m_explosion.transform.position = m_ball.transform.position;        
+        //m_explosion.transform.position = m_ball.transform.position;        
         m_rb.detectCollisions = false;
         m_rb.Sleep();
         m_ball.SetActive(false);
