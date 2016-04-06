@@ -3,28 +3,36 @@ using System.Collections;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(UnityStandardAssets.Characters.ThirdPerson.ThirdPersonUserControl))]
-[RequireComponent(typeof(UnityStandardAssets.Characters.ThirdPerson.ThirdPersonCharacter))]
 public class RobotWeapons : MonoBehaviour
 {
+    public GameObject m_cam, m_lazerHit;
     public List<GameObject> m_lazers = new List<GameObject>();
-    public ObjectPool m_pulseBlastAmmo;
 
-    public GameObject m_cam;
+    [System.Serializable]
+    public class Audio
+    {
+        public AudioSource m_audioSource;
+        public AudioClip m_lazer;
+        public float m_lazerPitchSlideRate = 0.1f;
+    }
+    public Audio m_audio = new Audio();
+
+    public ObjectPool m_pulseBlastAmmo, m_lazerBurns;
+    
     public Transform m_camPivot, m_pulseBlastFireTran;
     public Vector3 m_lazerAimOffset, m_pulseBlastAimOffset;
-    public float m_lazerForce = 30.0f, m_lazerAimDist, m_pulseBlastAimDist, m_pulseBlastVelocity = 3.0f, m_minTarDist = 1.0f, 
+    public float m_lazerForce = 30.0f, m_lazerAimDist, m_lazerBurnSepDist = 0.025f, m_pulseBlastAimDist, m_pulseBlastVelocity = 3.0f, m_minTarDist = 1.0f, 
         m_maxTarDist = 500.0f, m_aimingPlayerTurnSpeed = 20.0f, m_aimingPlayerTurnInertia = 0.1f, m_handAimSpeed = 0.1f;
     public bool m_weaponsIdle = false;
 
     private List<LineRenderer> m_lazerRends = new List<LineRenderer>();
 
     private Animator m_anim;
-    private Transform m_headBoneTran, m_rightHandTran, m_spineTran;
+    private Transform m_headBoneTran, m_spineTran;
     private OrbitCam m_camControl;
-    private UnityStandardAssets.Characters.ThirdPerson.ThirdPersonCharacter m_playerControl;
     private UnityStandardAssets.Characters.ThirdPerson.ThirdPersonUserControl m_playerUserControl;
     private RaycastHit m_hit;
-    private Vector3 m_camPivotStartPos, m_headLookTarPos;
+    private Vector3 m_camPivotStartPos, m_headLookTarPos, m_normAtLookTarPos, m_lastBurnPos;
     private float m_prevDist, m_turnCheck, m_turning, m_handAimWeight;
     private int m_wepMode = 0, m_numWepModes = 2;
     private bool m_fire1, m_fire2, m_1, m_2, m_aimed = false, m_pulseBlasted = false, m_headTar;
@@ -33,14 +41,12 @@ public class RobotWeapons : MonoBehaviour
     void Start ()
     {
         m_anim = GetComponent<Animator>();
-        m_headBoneTran = m_anim.GetBoneTransform(HumanBodyBones.Head);
-        m_rightHandTran = m_anim.GetBoneTransform(HumanBodyBones.RightHand);
+        m_headBoneTran = m_anim.GetBoneTransform(HumanBodyBones.Head);        
         m_spineTran = m_anim.GetBoneTransform(HumanBodyBones.Spine);                             
 
         m_camControl = m_cam.GetComponent<OrbitCam>();
         m_camPivotStartPos = transform.InverseTransformPoint(m_camPivot.transform.position);
-
-        m_playerControl = GetComponent<UnityStandardAssets.Characters.ThirdPerson.ThirdPersonCharacter>();
+        
         m_playerUserControl = GetComponent<UnityStandardAssets.Characters.ThirdPerson.ThirdPersonUserControl>();
 
         //Fetch lazer renderers
@@ -49,6 +55,12 @@ public class RobotWeapons : MonoBehaviour
             LineRenderer rend = m_lazers[i].GetComponent<LineRenderer>();
             m_lazerRends.Add(rend);
         }
+
+        //Set default sound
+        m_audio.m_audioSource.clip = m_audio.m_lazer;
+
+        //Fake last burn pos
+        m_lastBurnPos = new Vector3(1000.0f, -1000.0f, 1000.0f);
     }
 	
 	// Update is called once per frame
@@ -122,10 +134,12 @@ public class RobotWeapons : MonoBehaviour
         if (m_headTar)
         {
             m_headLookTarPos = m_hit.point;
+            m_normAtLookTarPos = m_hit.normal;
         }
         else
         {
             m_headLookTarPos = m_cam.transform.position + m_cam.transform.forward * m_maxTarDist;
+            m_normAtLookTarPos = Vector3.up;
         }
 
         m_turnCheck = Vector3.Dot((m_headLookTarPos - transform.position).normalized, transform.forward);        
@@ -228,7 +242,35 @@ public class RobotWeapons : MonoBehaviour
                     if(!m_lazerRends[i].enabled)
                     {
                         m_lazerRends[i].enabled = true;
-                    }                    
+                    }                   
+                }
+
+                //Visualize hit
+                m_lazerHit.transform.position = m_headLookTarPos;
+                m_lazerHit.transform.rotation = Quaternion.LookRotation(transform.forward, m_normAtLookTarPos);
+                if(!m_lazerHit.activeInHierarchy)
+                {
+                    m_lazerHit.SetActive(true);
+                }
+
+                if((m_headLookTarPos - m_lastBurnPos).magnitude > m_lazerBurnSepDist)
+                {
+                    m_lastBurnPos = m_headLookTarPos;
+
+                    GameObject burn = m_lazerBurns.GetObject();
+                    burn.transform.position = m_headLookTarPos + m_normAtLookTarPos * 0.1f;
+                    burn.transform.rotation = Quaternion.LookRotation(-m_normAtLookTarPos, transform.forward);
+                    burn.SetActive(true);
+                }                
+
+                //LazerSound
+                if (!m_audio.m_audioSource.isPlaying)
+                {
+                    m_audio.m_audioSource.Play();
+                }
+                else
+                {
+                    //m_audio.m_audioSource.pitch = Mathf.Clamp(Mathf.Lerp(m_audio.m_audioSource.pitch, m_audio.m_audioSource.pitch + Random.Range(0.0f, 0.2f), m_audio.m_lazerPitchSlideRate), 1.0f, 1.2f);
                 }
 
                 if(m_headTar && m_hit.rigidbody != null)
@@ -246,6 +288,16 @@ public class RobotWeapons : MonoBehaviour
                         m_lazerRends[i].enabled = false;
                     }
                 }
+
+                if (m_lazerHit.activeInHierarchy)
+                {
+                    m_lazerHit.SetActive(false);
+                }
+
+                if (m_audio.m_audioSource.isPlaying)
+                {
+                    m_audio.m_audioSource.Stop();
+                }
             }            
         }
         else if(m_aimed)
@@ -259,6 +311,16 @@ public class RobotWeapons : MonoBehaviour
                 {
                     m_lazerRends[i].enabled = false;
                 }
+            }
+
+            if (m_lazerHit.activeInHierarchy)
+            {
+                m_lazerHit.SetActive(false);
+            }
+
+            if (m_audio.m_audioSource.isPlaying)
+            {
+                m_audio.m_audioSource.Stop();
             }
 
             ResetCam();

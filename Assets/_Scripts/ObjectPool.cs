@@ -10,7 +10,8 @@ public class ObjectPool : MonoBehaviour
     public int m_poolStartSize = 10, m_grownPoolSize = 20, m_maxPoolSize = 1000;
     public bool m_grows = true;
 
-    private List<GameObject> m_objects;      
+    private List<GameObject> m_objects;
+    private int m_lastGot;      
 
     void Awake()
     {
@@ -38,7 +39,7 @@ public class ObjectPool : MonoBehaviour
 
     public GameObject GetObject()
     {
-        if (m_objects.Count > m_grownPoolSize)
+        if (m_grows && m_objects.Count > m_grownPoolSize)
         {
             //Debug.Log("try to clean");
             CleanPool();
@@ -48,6 +49,7 @@ public class ObjectPool : MonoBehaviour
         {
             if(!m_objects[i].activeInHierarchy)
             {
+                m_lastGot = i;
                 return m_objects[i];
             }
         }
@@ -57,6 +59,19 @@ public class ObjectPool : MonoBehaviour
             GameObject obj = (GameObject)Instantiate(m_pooledObject);
             m_objects.Add(obj);
             return obj;
+        }
+        else if(!m_grows)
+        {
+            if(m_lastGot == m_objects.Count - 1)
+            {
+                m_lastGot = 0;
+                return m_objects[0];
+            }
+            else
+            {
+                m_lastGot++;
+                return m_objects[m_lastGot];
+            }
         }
 
         return null;

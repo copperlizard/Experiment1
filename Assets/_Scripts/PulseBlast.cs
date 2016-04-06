@@ -72,6 +72,7 @@ public class PulseBlast : MonoBehaviour
 
     void OnEnable()
     {
+        transform.parent = null;
         m_projectile.SetActive(true);
         m_rb.detectCollisions = true;
         m_rb.WakeUp();
@@ -83,6 +84,23 @@ public class PulseBlast : MonoBehaviour
 
         StartCoroutine(SelfDestructTimer(m_fuseTime));
     }
+
+    /*
+    void OnCollisionEnter(Collision other)
+    {
+        if(other.gameObject.tag != "Player")
+        {            
+            m_rb.velocity = Vector3.zero;
+            m_rb.detectCollisions = false;
+            
+            if(other.transform != null)
+            {                
+                transform.parent = other.transform;
+                Debug.Log("child of " + other.gameObject.name);
+            }
+        }
+    }
+    */
 
     void Explode()
     {
