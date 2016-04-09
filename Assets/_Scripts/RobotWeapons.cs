@@ -246,32 +246,33 @@ public class RobotWeapons : MonoBehaviour
                 }
 
                 //Visualize hit
-                m_lazerHit.transform.position = m_headLookTarPos;
-                m_lazerHit.transform.rotation = Quaternion.LookRotation(transform.forward, m_normAtLookTarPos);
-                if(!m_lazerHit.activeInHierarchy)
-                {
-                    m_lazerHit.SetActive(true);
-                }
+                if (m_headTar)
+                {                    
+                    m_lazerHit.transform.position = m_headLookTarPos;
+                    m_lazerHit.transform.rotation = Quaternion.LookRotation(transform.forward, m_normAtLookTarPos);
+                    if (!m_lazerHit.activeInHierarchy)
+                    {
+                        m_lazerHit.SetActive(true);
+                    }
 
-                if((m_headLookTarPos - m_lastBurnPos).magnitude > m_lazerBurnSepDist)
-                {
-                    m_lastBurnPos = m_headLookTarPos;
+                    //Scorch mark
+                    if ((m_headLookTarPos - m_lastBurnPos).magnitude > m_lazerBurnSepDist)
+                    {
+                        m_lastBurnPos = m_headLookTarPos;
 
-                    GameObject burn = m_lazerBurns.GetObject();
-                    burn.transform.position = m_headLookTarPos + m_normAtLookTarPos * 0.1f;
-                    burn.transform.rotation = Quaternion.LookRotation(-m_normAtLookTarPos, transform.forward);
-                    burn.SetActive(true);
-                }                
+                        GameObject burn = m_lazerBurns.GetObject();
+                        burn.transform.position = m_headLookTarPos + m_normAtLookTarPos * 0.01f;
+                        burn.transform.rotation = Quaternion.LookRotation(-m_normAtLookTarPos, transform.forward);
+                        burn.SetActive(true);
+                        burn.transform.parent = m_hit.transform;
+                    }
+                }              
 
                 //LazerSound
                 if (!m_audio.m_audioSource.isPlaying)
                 {
                     m_audio.m_audioSource.Play();
-                }
-                else
-                {
-                    //m_audio.m_audioSource.pitch = Mathf.Clamp(Mathf.Lerp(m_audio.m_audioSource.pitch, m_audio.m_audioSource.pitch + Random.Range(0.0f, 0.2f), m_audio.m_lazerPitchSlideRate), 1.0f, 1.2f);
-                }
+                }               
 
                 if(m_headTar && m_hit.rigidbody != null)
                 {
