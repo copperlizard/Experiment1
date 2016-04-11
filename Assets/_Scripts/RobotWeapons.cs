@@ -153,7 +153,7 @@ public class RobotWeapons : MonoBehaviour
             
             if(Vector3.Dot(m_cam.transform.forward, move) > 0.0f || move.magnitude == 0.0f)
             {
-                if (m_turnCheck <= 0.0f)
+                if (m_turnCheck < 0.0f)
                 {
                     m_turning = Mathf.Lerp(m_turning, 1.0f, m_aimingPlayerTurnInertia);
                 }
@@ -162,7 +162,7 @@ public class RobotWeapons : MonoBehaviour
                     m_turning = Mathf.Lerp(m_turning, 0.0f, m_aimingPlayerTurnInertia);
                 }
 
-                if (m_turning > 0.0f)
+                if (m_turning > 0.001f)
                 {
                     float rigthCheck = Vector3.Dot((m_headLookTarPos - transform.position).normalized, transform.right);
 
@@ -247,7 +247,7 @@ public class RobotWeapons : MonoBehaviour
 
                 //Visualize hit
                 if (m_headTar)
-                {                    
+                {                       
                     m_lazerHit.transform.position = m_headLookTarPos;
                     m_lazerHit.transform.rotation = Quaternion.LookRotation(transform.forward, m_normAtLookTarPos);
                     if (!m_lazerHit.activeInHierarchy)
